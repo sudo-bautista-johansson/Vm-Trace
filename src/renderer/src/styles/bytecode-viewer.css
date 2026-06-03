@@ -1,0 +1,104 @@
+/* ============================================================================
+   VMTrace Bytecode Viewer Styles
+   Optimized table layout for fast rendering of assembly/bytecode instruction lists.
+   ============================================================================ */
+
+.bytecode-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: var(--text-main);
+  background: var(--bg-panel);
+}
+
+.bytecode-header-row {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  z-index: 5;
+}
+
+.bytecode-th {
+  text-align: left;
+  padding: 6px 12px;
+  color: var(--text-sub);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bytecode-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.01);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.bytecode-row:hover {
+  background-color: var(--bg-hover);
+}
+
+.bytecode-row.selected {
+  background-color: rgba(var(--accent-rgb), 0.08);
+  border-left: 3px solid var(--accent);
+}
+
+.bytecode-td {
+  padding: 5px 12px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cell-specific colors and fonts */
+.cell-address {
+  color: var(--text-sub);
+  width: 110px;
+}
+
+.cell-opcode {
+  color: #a7f3d0;
+  width: 120px;
+  font-weight: 500;
+}
+
+.cell-mnemonic {
+  font-weight: 600;
+  width: 90px;
+}
+
+.cell-operands {
+  color: #cbd5e1;
+}
+
+.cell-comment {
+  color: #38bdf8;
+  font-style: italic;
+}
+
+.cell-comment input {
+  background: var(--bg-dark);
+  border: 1px solid var(--accent);
+  color: var(--text-main);
+  font-family: var(--font-code);
+  font-size: 12px;
+  width: 90%;
+  padding: 1px 4px;
+  outline: none;
+  border-radius: 3px;
+}
+
+/* Coloring classes by type */
+.type-control_flow { color: var(--color-ctrl); }
+.type-stack { color: var(--color-stack); }
+.type-arithmetic { color: var(--color-arith); }
+.type-logic { color: var(--color-logic); }
+.type-memory { color: var(--color-mem); }
+.type-system { color: var(--color-sys); }
+.type-suspicious { color: var(--color-susp); }
+.type-nop { color: var(--color-nop); }
+.type-unknown { color: var(--text-main); }

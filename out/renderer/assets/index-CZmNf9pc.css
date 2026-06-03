@@ -1,0 +1,1112 @@
+/* ============================================================================
+   VMTrace Global Stylesheet
+   Design tokens: Modern cyberpunk dark mode, ice-blue accent.
+   ============================================================================ */
+
+:root {
+  --bg-dark: #0a0c10;
+  --bg-workspace: #0d0f14;
+  --bg-panel: #13161c;
+  --bg-header: #1a1e26;
+  --bg-hover: #222834;
+  --bg-active: #2a3242;
+  
+  --accent: #00f0ff;
+  --accent-rgb: 0, 240, 255;
+  --accent-glow: rgba(0, 240, 255, 0.25);
+  --accent-dim: #00bcd4;
+  
+  --text-main: #e2e8f0;
+  --text-sub: #7b8a9e;
+  --text-dim: #4e5d70;
+  
+  --border: #1e2430;
+  --border-focus: #38bdf8;
+  
+  /* Instruction type colors */
+  --color-ctrl: #38bdf8;   /* Blue */
+  --color-stack: #c084fc;  /* Purple */
+  --color-arith: #facc15;  /* Yellow */
+  --color-logic: #fb7185;  /* Coral */
+  --color-mem: #34d399;    /* Teal */
+  --color-sys: #94a3b8;    /* Slate */
+  --color-susp: #f43f5e;   /* Red */
+  --color-nop: #64748b;    /* Gray */
+  
+  --font-ui: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-code: 'JetBrains Mono', "Fira Code", Monaco, Consolas, monospace;
+}
+
+/* ─── Base Reset ────────────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-panel);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--accent-rgb), 0.5);
+}
+
+/* ─── App Layout ─────────────────────────────────────────────────────────── */
+
+#app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+#app-root.blur-app {
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+/* ─── Loading Overlay (Cybernetic Eye & Spiral) ────────────────────────── */
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(6, 8, 12, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+.loading-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loader-logo-container {
+  margin-bottom: 24px;
+  position: relative;
+  filter: drop-shadow(0 0 10px rgba(var(--accent-rgb), 0.15));
+}
+
+.loader-text {
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-main);
+  text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
+  margin-bottom: 8px;
+}
+
+.loader-subtext {
+  font-family: var(--font-code);
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+/* ─── SVG Logo Animations ──────────────────────────────────────────────── */
+
+/* 1. Spiral Circuit Rotation */
+.spiral-circuit {
+  transform-origin: 100px 100px;
+  animation: spinSpiral 25s linear infinite;
+}
+
+@keyframes spinSpiral {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 2. HUD Rings Rotation (Opposite direction for complexity) */
+.hud-ring-outer {
+  transform-origin: 100px 100px;
+  animation: spinOuter HUD 18s linear infinite;
+}
+
+.hud-ring-mid {
+  transform-origin: 100px 100px;
+  animation: spinMidHUD 12s linear infinite reverse;
+}
+
+@keyframes spinOuterHUD {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes spinMidHUD {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 3. Eyelids Breathing Effect */
+.eyelid-upper, .eyelid-lower {
+  animation: eyelidBreathing 4s ease-in-out infinite alternate;
+}
+
+@keyframes eyelidBreathing {
+  0% {
+    filter: drop-shadow(0 0 1px rgba(var(--accent-rgb), 0.2));
+    stroke-width: 2.2px;
+  }
+  100% {
+    filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.8));
+    stroke-width: 2.8px;
+  }
+}
+
+/* 4. Scanning Pupil Iris */
+.eye-iris-container {
+  transform-origin: 100px 100px;
+  animation: irisScan 6s ease-in-out infinite alternate;
+}
+
+@keyframes irisScan {
+  0% {
+    transform: scale(0.96) rotate(-15deg);
+  }
+  100% {
+    transform: scale(1.04) rotate(15deg);
+  }
+}
+
+/* 5. Glowing pulses travelling along the spiral (using dash offsets) */
+.spiral-path {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: drawSpiral 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+@keyframes drawSpiral {
+  0% {
+    stroke-dashoffset: 400;
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.2;
+  }
+}
+
+/* ─── Tech Input / HUD Components ────────────────────────────────────────── */
+
+.tech-input {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  font-family: var(--font-code);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.tech-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.2);
+}
+
+.tech-btn {
+  background: var(--bg-header);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.tech-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 5px rgba(var(--accent-rgb), 0.15);
+}
+
+.tech-btn:active {
+  background: var(--bg-active);
+}
+
+.tech-btn.primary {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tech-btn.primary:hover {
+  background: rgba(var(--accent-rgb), 0.2);
+}
+
+/* ─── General Panel Layouts ─────────────────────────────────────────────── */
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border);
+  height: 100%;
+  width: 100%;
+}
+
+.panel-header {
+  height: 38px;
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-content {
+  flex-grow: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.panel-content.no-padding {
+  padding: 0;
+}
+
+/* Tab buttons in panel header */
+.panel-tabs {
+  display: flex;
+  height: 100%;
+  align-items: flex-end;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tab-button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.03);
+}
+
+.tab-pane {
+  display: none;
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* ─── Empty state watermarks ────────────────────────────────────────────── */
+
+.graph-watermark {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  gap: 16px;
+  color: var(--text-dim);
+  font-family: var(--font-ui);
+}
+
+.watermark-text {
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+/* ============================================================================
+   VMTrace Workspace Panel Layout Styles
+   Defines the resizable columns/rows and drag dividers.
+   ============================================================================ */
+
+#workspace-layout {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  width: 100vw;
+  height: calc(100vh - 78px); /* minus Toolbar (40px) and Statusbar (38px) */
+  background-color: var(--bg-workspace);
+  overflow: hidden;
+  position: relative;
+}
+
+#panel-left {
+  width: 280px;
+  min-width: 200px;
+  max-width: 450px;
+  flex-shrink: 0;
+  border: none;
+  border-right: 1px solid var(--border);
+}
+
+#panel-center {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 400px;
+}
+
+#panel-bytecode {
+  flex-grow: 3;
+  height: 60%;
+  min-height: 200px;
+  border: none;
+}
+
+#panel-state {
+  flex-grow: 2;
+  height: 40%;
+  min-height: 150px;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+#panel-right {
+  width: 420px;
+  min-width: 250px;
+  max-width: 650px;
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--border);
+}
+
+/* ─── Workspace Dividers ────────────────────────────────────────────────── */
+
+.workspace-divider {
+  background-color: var(--bg-dark);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: background-color 0.2s ease;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.workspace-divider:hover,
+.workspace-divider.active {
+  background-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.vertical-divider {
+  width: 5px;
+  cursor: col-resize;
+  height: 100%;
+}
+
+.horizontal-divider {
+  height: 5px;
+  cursor: row-resize;
+  width: 100%;
+}
+
+/* Flex layout helper inside panels */
+.workspace-sub-layout {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Toolbar Styles ───────────────────────────────────────────────────── */
+
+#toolbar-container {
+  height: 44px;
+  background-color: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+/* ─── Statusbar Styles ──────────────────────────────────────────────────── */
+
+#statusbar-container {
+  height: 34px;
+  background-color: var(--bg-header);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-family: var(--font-code);
+  font-size: 11px;
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+/* ============================================================================
+   VMTrace Bytecode Viewer Styles
+   Optimized table layout for fast rendering of assembly/bytecode instruction lists.
+   ============================================================================ */
+
+.bytecode-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: var(--text-main);
+  background: var(--bg-panel);
+}
+
+.bytecode-header-row {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  z-index: 5;
+}
+
+.bytecode-th {
+  text-align: left;
+  padding: 6px 12px;
+  color: var(--text-sub);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bytecode-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.01);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.bytecode-row:hover {
+  background-color: var(--bg-hover);
+}
+
+.bytecode-row.selected {
+  background-color: rgba(var(--accent-rgb), 0.08);
+  border-left: 3px solid var(--accent);
+}
+
+.bytecode-td {
+  padding: 5px 12px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cell-specific colors and fonts */
+.cell-address {
+  color: var(--text-sub);
+  width: 110px;
+}
+
+.cell-opcode {
+  color: #a7f3d0;
+  width: 120px;
+  font-weight: 500;
+}
+
+.cell-mnemonic {
+  font-weight: 600;
+  width: 90px;
+}
+
+.cell-operands {
+  color: #cbd5e1;
+}
+
+.cell-comment {
+  color: #38bdf8;
+  font-style: italic;
+}
+
+.cell-comment input {
+  background: var(--bg-dark);
+  border: 1px solid var(--accent);
+  color: var(--text-main);
+  font-family: var(--font-code);
+  font-size: 12px;
+  width: 90%;
+  padding: 1px 4px;
+  outline: none;
+  border-radius: 3px;
+}
+
+/* Coloring classes by type */
+.type-control_flow { color: var(--color-ctrl); }
+.type-stack { color: var(--color-stack); }
+.type-arithmetic { color: var(--color-arith); }
+.type-logic { color: var(--color-logic); }
+.type-memory { color: var(--color-mem); }
+.type-system { color: var(--color-sys); }
+.type-suspicious { color: var(--color-susp); }
+.type-nop { color: var(--color-nop); }
+.type-unknown { color: var(--text-main); }
+/* ============================================================================
+   VMTrace VM State Panel Styles
+   Styled lists for Registers grid, Stack list, and Flag toggles.
+   ============================================================================ */
+
+.state-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr 180px;
+  gap: 16px;
+  height: 100%;
+  width: 100%;
+}
+
+.state-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  padding-right: 16px;
+}
+
+.state-column:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.state-title-sub {
+  font-size: 11px;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-sub);
+  margin-bottom: 10px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+/* Registers List */
+.regs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.reg-card {
+  background-color: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.reg-card:hover {
+  background-color: var(--bg-hover);
+  border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.reg-name {
+  font-size: 10px;
+  font-family: var(--font-code);
+  color: var(--text-sub);
+}
+
+.reg-value {
+  font-size: 12px;
+  font-family: var(--font-code);
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.reg-value.changed {
+  color: #ef4444;
+  animation: flashRed 1s ease-out;
+}
+
+@keyframes flashRed {
+  0% { color: #f87171; text-shadow: 0 0 4px rgba(239, 68, 68, 0.5); }
+  100% { color: var(--text-main); text-shadow: none; }
+}
+
+/* Stack Visualizer */
+.stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-right: 4px;
+}
+
+.stack-item {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  background-color: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-code);
+  font-size: 12px;
+}
+
+.stack-offset {
+  background-color: var(--bg-header);
+  color: var(--text-sub);
+  padding: 4px 8px;
+  border-right: 1px solid var(--border);
+  text-align: right;
+}
+
+.stack-val {
+  color: #10b981;
+  padding: 4px 12px;
+  font-weight: 500;
+}
+
+.stack-empty {
+  color: var(--text-dim);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  text-align: center;
+  margin-top: 24px;
+}
+
+/* Flags Chips */
+.flags-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flag-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: var(--font-code);
+  font-size: 12px;
+}
+
+.flag-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4b5563;
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.flag-chip.active .flag-indicator {
+  background-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.flag-chip.active {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.02);
+}
+/* ============================================================================
+   VMTrace Component Tree Panel Styles
+   ============================================================================ */
+
+.tree-section {
+  margin-bottom: 20px;
+}
+
+.tree-header {
+  font-size: 11px;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-sub);
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tree-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-main);
+  transition: all 0.15s ease;
+}
+
+.tree-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--accent);
+}
+
+.tree-item.active {
+  background-color: rgba(var(--accent-rgb), 0.05);
+  color: var(--accent);
+}
+
+.tree-item-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tree-item-meta {
+  font-family: var(--font-code);
+  font-size: 10px;
+  color: var(--text-sub);
+}
+
+.tree-empty {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 4px 8px;
+  font-style: italic;
+}
+
+/* Specific item designs */
+.tree-item.bookmark {
+  border-left: 2px solid transparent;
+}
+
+.badge-plugin-active {
+  width: 6px;
+  height: 6px;
+  background-color: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+  border-radius: 50%;
+}
+/* ============================================================================
+   VMTrace Plugins Console Panel Styles
+   ============================================================================ */
+
+.plugins-dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 12px;
+  gap: 12px;
+}
+
+.plugins-folder-card {
+  background-color: var(--bg-header);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.plugin-entry, .plugin-process-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  font-size: 12px;
+}
+
+.plugin-path {
+  font-family: var(--font-code);
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 64%;
+}
+
+.plugin-controls {
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+.plugins-dashboard .tech-btn {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.plugins-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-header);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.plugins-console-section {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  background-color: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 60%;
+}
+
+.console-header {
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  color: var(--text-sub);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.console-logs {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 8px;
+  font-family: var(--font-code);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #06080b;
+}
+
+.console-log-line {
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.console-log-line .time {
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+
+.console-log-line .plugin-name {
+  color: var(--accent);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.console-log-line.dir-in {
+  color: #34d399; /* Green for incoming messages */
+}
+
+.console-log-line.dir-out {
+  color: #38bdf8; /* Blue for outgoing replies */
+}
+
+.console-log-line.system {
+  color: #94a3b8;
+  font-style: italic;
+}
+/* ============================================================================
+   VMTrace Handler Inspector Panel Styles
+   ============================================================================ */
+
+.inspector-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 12px;
+  gap: 12px;
+}
+
+.inspector-info-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.inspector-card {
+  background-color: var(--bg-header);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  border-radius: 4px;
+}
+
+.inspector-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.inspector-card-value {
+  font-family: var(--font-code);
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.inspector-editor-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inspector-editor-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+}
+
+.inspector-editor-group textarea {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  resize: vertical;
+  min-height: 50px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.inspector-editor-group textarea:focus {
+  border-color: var(--accent);
+}
+
+.inspector-code-section {
+  flex-grow: 1;
+  background-color: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+}
+
+.inspector-code-title {
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  color: var(--text-sub);
+}
+
+.inspector-disasm-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  font-family: var(--font-code);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background-color: #07090d;
+}
+
+.inspector-disasm-line {
+  color: var(--text-main);
+  display: grid;
+  grid-template-columns: 80px 180px 1fr;
+}
+
+.inspector-disasm-line .addr {
+  color: var(--text-dim);
+}
+
+.inspector-disasm-line .bytes {
+  color: #a7f3d0;
+}
+
+.inspector-disasm-line .code {
+  font-weight: 500;
+}

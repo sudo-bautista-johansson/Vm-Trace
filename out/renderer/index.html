@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>VMTrace — Professional VM Analysis Tool</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws:;">
+  <!-- Google Fonts: JetBrains Mono & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/index-DYb0VotN.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CZmNf9pc.css">
+</head>
+<body>
+  <!-- Loading Overlay with Cybernetic Eye and Spiral Circuit -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loader-content">
+      <div class="loader-logo-container">
+        <!-- SVG Logo: Cybernetic Eye with Spiral Circuit -->
+        <svg id="cyber-eye-logo" viewBox="0 0 200 200" width="160" height="160">
+          <defs>
+            <!-- Glow effect filter -->
+            <filter id="eye-glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          
+          <!-- Spiral Circuit Background (rotating fine lines) -->
+          <g class="spiral-circuit" stroke="#00f0ff" stroke-width="1" fill="none" opacity="0.45">
+            <!-- Archimedean spiral trace -->
+            <path class="spiral-path" d="M 100,100 
+                     C 105,95 105,85 100,80
+                     C 90,75 80,85 80,100
+                     C 80,120 100,130 120,120
+                     C 140,110 145,80 125,60
+                     C 100,40 60,50 60,90
+                     C 60,135 110,160 150,140
+                     C 180,125 180,75 140,40
+                     C 95,5 35,30 40,90
+                     C 45,150 120,195 180,165" />
+            <!-- Connection joints -->
+            <circle cx="80" cy="100" r="2.5" fill="#00f0ff" />
+            <circle cx="120" cy="120" r="2.5" fill="#00f0ff" />
+            <circle cx="60" cy="90" r="2.5" fill="#00f0ff" />
+            <circle cx="150" cy="140" r="2.5" fill="#00f0ff" />
+            <circle cx="140" cy="40" r="2.5" fill="#00f0ff" />
+            <circle cx="180" cy="165" r="2.5" fill="#00f0ff" />
+            <!-- Connecting radial lines -->
+            <line x1="100" y1="100" x2="80" y2="100" stroke-dasharray="2 2" />
+            <line x1="120" y1="120" x2="150" y2="140" stroke-dasharray="3 2" />
+            <line x1="60" y1="90" x2="40" y2="90" stroke-dasharray="2 1" />
+          </g>
+
+          <!-- Glowing pulses flowing along circuits -->
+          <g class="circuit-pulses" fill="#ffffff" filter="url(#eye-glow)">
+            <circle class="pulse-dot dot-1" r="2" />
+            <circle class="pulse-dot dot-2" r="2" />
+          </g>
+          
+          <!-- Outer Tech HUD Rings -->
+          <circle cx="100" cy="100" r="85" stroke="#00f0ff" stroke-width="0.75" stroke-dasharray="10 35" fill="none" opacity="0.3" class="hud-ring-outer" />
+          <circle cx="100" cy="100" r="75" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="45 15 5 15" fill="none" opacity="0.6" class="hud-ring-mid" />
+
+          <!-- Cybernetic Eye Outline -->
+          <!-- Upper eyelid -->
+          <path d="M 30,100 C 65,55 135,55 170,100" stroke="#00f0ff" stroke-width="2.5" fill="none" filter="url(#eye-glow)" class="eyelid-upper" />
+          <!-- Lower eyelid -->
+          <path d="M 30,100 C 65,145 135,145 170,100" stroke="#00f0ff" stroke-width="2.5" fill="none" filter="url(#eye-glow)" class="eyelid-lower" />
+          
+          <!-- Corner ticks/corners -->
+          <path d="M 23,100 L 32,100" stroke="#00f0ff" stroke-width="2" />
+          <path d="M 168,100 L 177,100" stroke="#00f0ff" stroke-width="2" />
+
+          <!-- Iris & Pupil -->
+          <g class="eye-iris-container">
+            <!-- Concentric dashed outer iris -->
+            <circle cx="100" cy="100" r="34" stroke="#00f0ff" stroke-width="1" stroke-dasharray="6 3" fill="none" opacity="0.7" class="iris-outer" />
+            <!-- Solid inner iris ring -->
+            <circle cx="100" cy="100" r="22" stroke="#00f0ff" stroke-width="1.5" fill="none" opacity="0.9" />
+            <!-- Pupil (with tech lines) -->
+            <circle cx="100" cy="100" r="10" fill="#00f0ff" filter="url(#eye-glow)" class="pupil-core" />
+            
+            <!-- Scanning crosshairs inside pupil -->
+            <line x1="100" y1="84" x2="100" y2="116" stroke="#0e1117" stroke-width="1" />
+            <line x1="84" y1="100" x2="116" y2="100" stroke="#0e1117" stroke-width="1" />
+            <!-- Tech ticks -->
+            <circle cx="100" cy="100" r="4" fill="#ffffff" />
+          </g>
+        </svg>
+      </div>
+      <div class="loader-text">Cargando Analizador...</div>
+      <div class="loader-subtext">Estableciendo conexión con el motor...</div>
+    </div>
+  </div>
+
+  <!-- Main Application Wrapper -->
+  <div id="app-root">
+    <!-- Top Toolbar -->
+    <header id="toolbar-container"></header>
+
+    <!-- Resizable 4-Panel Layout -->
+    <main id="workspace-layout">
+      <!-- Left Panel: Tree Panel (VMs, Handlers, Bookmarks, Plugins) -->
+      <section id="panel-left" class="panel-section">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="icon">📦</span> Explora Proyecto
+          </div>
+        </div>
+        <div class="panel-content" id="tree-container"></div>
+      </section>
+
+      <!-- Horizontal Divider 1 (Left / Center) -->
+      <div id="divider-left" class="workspace-divider vertical-divider"></div>
+
+      <!-- Center Wrapper: Bytecode (Top) + VM State (Bottom) -->
+      <div id="panel-center" class="workspace-sub-layout">
+        
+        <!-- Center Top: Bytecode Viewer -->
+        <section id="panel-bytecode" class="panel-section">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="icon">🧊</span> Bytecode Viewer
+            </div>
+            <div class="panel-actions">
+              <input type="text" id="bytecode-search" placeholder="Ir a Dirección (Ctrl+G)..." class="tech-input">
+            </div>
+          </div>
+          <div class="panel-content no-padding" id="bytecode-container"></div>
+        </section>
+
+        <!-- Vertical Divider (Bytecode / VM State) -->
+        <div id="divider-center" class="workspace-divider horizontal-divider"></div>
+
+        <!-- Center Bottom: VM State -->
+        <section id="panel-state" class="panel-section">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="icon">⚙️</span> VM State
+            </div>
+          </div>
+          <div class="panel-content" id="state-container"></div>
+        </section>
+
+      </div>
+
+      <!-- Horizontal Divider 2 (Center / Right) -->
+      <div id="divider-right" class="workspace-divider vertical-divider"></div>
+
+      <!-- Right Panel: Graph CFG / Inspect Tools -->
+      <section id="panel-right" class="panel-section">
+        <div class="panel-header">
+          <div class="panel-tabs">
+            <button class="tab-button active" data-tab="tab-cfg">Grafo CFG</button>
+            <button class="tab-button" data-tab="tab-inspector">Handler Inspector</button>
+            <button class="tab-button" data-tab="tab-plugins">Consola Plugins</button>
+          </div>
+        </div>
+        <div class="panel-content no-padding">
+          <!-- CFG View -->
+          <div id="tab-cfg" class="tab-pane active">
+            <div id="cfg-canvas"></div>
+            <!-- Empty state watermark -->
+            <div id="cfg-empty-state" class="graph-watermark">
+              <svg viewBox="0 0 200 200" width="80" height="80" opacity="0.15">
+                <use href="#cyber-eye-logo" />
+              </svg>
+              <div class="watermark-text">Carga un binario para ver el flujo</div>
+            </div>
+          </div>
+
+          <!-- Handler Inspector View -->
+          <div id="tab-inspector" class="tab-pane">
+            <div id="inspector-container"></div>
+          </div>
+
+          <!-- Plugins Dashboard View -->
+          <div id="tab-plugins" class="tab-pane">
+            <div id="plugins-container"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Status Bar -->
+    <footer id="statusbar-container"></footer>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,83 @@
+/* ============================================================================
+   VMTrace Component Tree Panel Styles
+   ============================================================================ */
+
+.tree-section {
+  margin-bottom: 20px;
+}
+
+.tree-header {
+  font-size: 11px;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-sub);
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tree-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-main);
+  transition: all 0.15s ease;
+}
+
+.tree-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--accent);
+}
+
+.tree-item.active {
+  background-color: rgba(var(--accent-rgb), 0.05);
+  color: var(--accent);
+}
+
+.tree-item-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tree-item-meta {
+  font-family: var(--font-code);
+  font-size: 10px;
+  color: var(--text-sub);
+}
+
+.tree-empty {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 4px 8px;
+  font-style: italic;
+}
+
+/* Specific item designs */
+.tree-item.bookmark {
+  border-left: 2px solid transparent;
+}
+
+.badge-plugin-active {
+  width: 6px;
+  height: 6px;
+  background-color: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+  border-radius: 50%;
+}
