@@ -32,27 +32,41 @@ export class BytecodeAnalyzer {
    * Analyze bytecode to detect dispatcher patterns
    */
   analyzeDispatcher(): DispatcherPattern | null {
-    // Strategy: Look for common VM dispatcher patterns
+    // Strategy: Look for common VM dispatcher patterns.
 
-    // 1. Try to find switch-case pattern
+    // 1. Prefer direct jump table detection when present.
+    const tables = this.findJumpTables()
+    if (tables.length > 0) {
+      const table = tables[0]
+      return {
+        type: 'table_lookup',
+        confidence: Math.min(table.tableSize / 20, 1),
+        dispatcherAddress: table.address,
+        jumpTableSize: table.tableSize,
+        opcodeTableAddress: table.address,
+        pattern: `Detected jump table at 0x${table.address.toString(16).toUpperCase()} (${table.tableSize} entries)`
+      }
+    }
+
+    // 2. Try to find switch-case pattern.
     const switchPattern = this.detectSwitchCasePattern()
     if (switchPattern && switchPattern.confidence > 0.6) {
       return switchPattern
     }
 
-    // 2. Try to find table lookup pattern
+    // 3. Try to find table lookup pattern from indirect structures.
     const tablePattern = this.detectTableLookupPattern()
     if (tablePattern && tablePattern.confidence > 0.6) {
       return tablePattern
     }
 
-    // 3. Try to find indirect jump pattern
+    // 4. Try to find indirect jump pattern.
     const indirectPattern = this.detectIndirectJumpPattern()
     if (indirectPattern && indirectPattern.confidence > 0.6) {
       return indirectPattern
     }
 
-    // Return best guess or null
+    // Return best guess or null.
     return switchPattern || tablePattern || indirectPattern
   }
 
@@ -172,26 +186,68 @@ export class BytecodeAnalyzer {
    * Identify likely opcodes from bytecode frequency analysis
    * Opcodes tend to appear more frequently and uniformly than random data
    */
-  identifyLikelyOpcodes(sampleSize: number = 100): OpcodeCandidate[] {
+  identifyLikelyOpcodes(sampleSize: number = this.bytecode.length): OpcodeCandidate[] {
     const frequency: Record<number, number> = {}
+    const limit = Math.min(sampleSize, this.bytecode.length)
 
-    // Count byte frequencies
-    for (let i = 0; i < Math.min(sampleSize, this.bytecode.length); i++) {
+    // Count byte frequencies across the sample window.
+    for (let i = 0; i < limit; i++) {
       const byte = this.bytecode[i]
       frequency[byte] = (frequency[byte] || 0) + 1
     }
 
-    // Convert to candidates
-    const candidates: OpcodeCandidate[] = Object.entries(frequency).map(([value, freq]) => ({
-      value: parseInt(value),
-      frequency: freq,
-      likely: freq >= 2 // Appears more than once in sample
-    }))
+    // Convert to candidates and mark likely opcodes using distribution heuristics.
+    const candidates: OpcodeCandidate[] = Object.entries(frequency).map(([value, freq]) => {
+      const numericValue = parseInt(value)
+      const frequencyRatio = freq / this.bytecode.length
+      return {
+        value: numericValue,
+        frequency: freq,
+        likely: freq >= 2 && frequencyRatio >= 0.005
+      }
+    })
 
-    // Sort by frequency descending
+    // Sort by frequency descending and return.
     candidates.sort((a, b) => b.frequency - a.frequency)
 
     return candidates
+  }
+
+  /**
+   * Get positions where a candidate opcode appears in the bytecode.
+   */
+  getOpcodePositions(opcodeValue: number): number[] {
+    const positions: number[] = []
+    for (let i = 0; i < this.bytecode.length; i++) {
+      if (this.bytecode[i] === opcodeValue) {
+        positions.push(this.baseAddress + i)
+      }
+    }
+    return positions
+  }
+
+  /**
+   * Extract opcode context for a position in the bytecode.
+   */
+  getOpcodeContext(position: number, windowSize: number = 4): {
+    precedingOpcodes: number[]
+    followingOpcodes: number[]
+    bytecodeWindow: Buffer
+    position: number
+  } {
+    const relativePos = position - this.baseAddress
+    const start = Math.max(0, relativePos - windowSize)
+    const end = Math.min(this.bytecode.length, relativePos + windowSize + 1)
+    const window = this.bytecode.subarray(start, end)
+    const preceding = Array.from(this.bytecode.subarray(start, relativePos))
+    const following = Array.from(this.bytecode.subarray(relativePos + 1, end))
+
+    return {
+      precedingOpcodes: preceding,
+      followingOpcodes: following,
+      bytecodeWindow: Buffer.from(window),
+      position: relativePos - start
+    }
   }
 
   /**

@@ -18,6 +18,12 @@ VM-Trace carga binarios PE y ELF que contienen bytecode de máquinas virtuales i
 
 VM-Trace no emula código nativo estándar, no ejecuta APIs de Windows ni funciona como un emulador x86/x64 general.
 
+## ¿Puede analizar VMs desconocidas?
+
+VM-Trace puede ayudar a analizar VMs arbitrarias mediante detección de dispatchers, handlers y semántica de opcodes. Además, ahora incluye detección de tablas de salto y generación de pseudo-desensamblado de bytecode para que puedas inspeccionar código oculto incluso cuando el dispatcher no es evidente.
+
+Funciona mejor con VMs que siguen patrones de despacho y handlers típicos; no es una garantía para ISAs extremadamente exóticos o personalizados hasta el extremo.
+
 ## Por qué usarlo
 
 - Para descubrir cómo funciona una VM custom dentro de un binario
@@ -122,6 +128,7 @@ Las contribuciones son bienvenidas. Prioridades:
 
 - [Fixes Applied](./FIXES_APPLIED.md) — Correcciones recientes
 - [Architecture](./architecture.md) — Detalles técnicos
+- [Plugins](./plugins.md) — Documentación oficial de plugins
 
 ---
 

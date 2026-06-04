@@ -787,6 +787,12 @@ class VMEngine {
   getConfig() {
     return { ...this.config };
   }
+  getBytecode() {
+    return this.bytecode;
+  }
+  getBytecodeBase() {
+    return this.bytecodeBase;
+  }
   /**
    * Expose state manager methods for handler executors
    */
@@ -1661,6 +1667,18 @@ class BytecodeAnalyzer {
    * Analyze bytecode to detect dispatcher patterns
    */
   analyzeDispatcher() {
+    const tables = this.findJumpTables();
+    if (tables.length > 0) {
+      const table = tables[0];
+      return {
+        type: "table_lookup",
+        confidence: Math.min(table.tableSize / 20, 1),
+        dispatcherAddress: table.address,
+        jumpTableSize: table.tableSize,
+        opcodeTableAddress: table.address,
+        pattern: `Detected jump table at 0x${table.address.toString(16).toUpperCase()} (${table.tableSize} entries)`
+      };
+    }
     const switchPattern = this.detectSwitchCasePattern();
     if (switchPattern && switchPattern.confidence > 0.6) {
       return switchPattern;
@@ -1758,20 +1776,53 @@ class BytecodeAnalyzer {
    * Identify likely opcodes from bytecode frequency analysis
    * Opcodes tend to appear more frequently and uniformly than random data
    */
-  identifyLikelyOpcodes(sampleSize = 100) {
+  identifyLikelyOpcodes(sampleSize = this.bytecode.length) {
     const frequency = {};
-    for (let i = 0; i < Math.min(sampleSize, this.bytecode.length); i++) {
+    const limit = Math.min(sampleSize, this.bytecode.length);
+    for (let i = 0; i < limit; i++) {
       const byte = this.bytecode[i];
       frequency[byte] = (frequency[byte] || 0) + 1;
     }
-    const candidates = Object.entries(frequency).map(([value, freq]) => ({
-      value: parseInt(value),
-      frequency: freq,
-      likely: freq >= 2
-      // Appears more than once in sample
-    }));
+    const candidates = Object.entries(frequency).map(([value, freq]) => {
+      const numericValue = parseInt(value);
+      const frequencyRatio = freq / this.bytecode.length;
+      return {
+        value: numericValue,
+        frequency: freq,
+        likely: freq >= 2 && frequencyRatio >= 5e-3
+      };
+    });
     candidates.sort((a, b) => b.frequency - a.frequency);
     return candidates;
+  }
+  /**
+   * Get positions where a candidate opcode appears in the bytecode.
+   */
+  getOpcodePositions(opcodeValue) {
+    const positions = [];
+    for (let i = 0; i < this.bytecode.length; i++) {
+      if (this.bytecode[i] === opcodeValue) {
+        positions.push(this.baseAddress + i);
+      }
+    }
+    return positions;
+  }
+  /**
+   * Extract opcode context for a position in the bytecode.
+   */
+  getOpcodeContext(position, windowSize = 4) {
+    const relativePos = position - this.baseAddress;
+    const start = Math.max(0, relativePos - windowSize);
+    const end = Math.min(this.bytecode.length, relativePos + windowSize + 1);
+    const window = this.bytecode.subarray(start, end);
+    const preceding = Array.from(this.bytecode.subarray(start, relativePos));
+    const following = Array.from(this.bytecode.subarray(relativePos + 1, end));
+    return {
+      precedingOpcodes: preceding,
+      followingOpcodes: following,
+      bytecodeWindow: Buffer.from(window),
+      position: relativePos - start
+    };
   }
   /**
    * Analyze bytecode statistics for indicators of VM structure
@@ -2408,7 +2459,7 @@ class DynamicHandlerDetector {
       result.pattern = pattern;
       result.dispatcherFound = true;
     }
-    const opcodes = this.analyzer.identifyLikelyOpcodes(500);
+    const opcodes = this.analyzer.identifyLikelyOpcodes();
     result.opcodesCandidates = opcodes.filter((o) => o.likely);
     result.handlersCreated = this.createHandlers(result.opcodesCandidates);
     const semanticInfo = this.analyzeSemantics(result.handlersCreated);
@@ -2459,9 +2510,23 @@ class DynamicHandlerDetector {
         handler.handlerType = knownSig.type.split(":")[1] || "unknown";
         handler.description = knownSig.description;
       } else {
+        const positions = this.analyzer.getOpcodePositions(handler.opcodeValue);
+        const samplePositions = positions.slice(0, 5);
+        let precedingOpcodes = [];
+        let followingOpcodes = [];
+        let bytecodeWindow;
+        for (const pos of samplePositions) {
+          const context = this.analyzer.getOpcodeContext(pos, 6);
+          precedingOpcodes = precedingOpcodes.concat(context.precedingOpcodes);
+          followingOpcodes = followingOpcodes.concat(context.followingOpcodes);
+          bytecodeWindow = bytecodeWindow || context.bytecodeWindow;
+        }
         const inferred = OpcodeSemanticAnalyzer.analyzeOpcode(handler.opcodeValue, {
-          frequency: 0
-          // Would be populated from frequency analysis in real scenario
+          frequency: handler.confidence ? Math.round(handler.confidence * 100) : 0,
+          precedingOpcodes,
+          followingOpcodes,
+          bytecodeWindow,
+          position: samplePositions[0]
         });
         inferredSemantics++;
         handler.label = OpcodeSemanticAnalyzer.getExecutorLabel(inferred.type);
@@ -3694,8 +3759,10 @@ const supportedPluginLaunchers = {
   ".mjs": { command: "node", argBuilder: (filePath) => [filePath] },
   ".exe": { command: "", argBuilder: () => [] },
   ".jar": { command: "java", argBuilder: (filePath) => ["-jar", filePath] },
+  ".java": { command: "", argBuilder: () => [] },
   ".bat": { command: "", argBuilder: () => [] },
-  ".cmd": { command: "", argBuilder: () => [] }
+  ".cmd": { command: "", argBuilder: () => [] },
+  ".cpp": { command: "", argBuilder: () => [] }
 };
 const pluginProcesses = /* @__PURE__ */ new Map();
 function createPluginProcessInfo(filePath, command, args) {
@@ -3735,12 +3802,32 @@ function findWorkspaceVenvPython() {
   }
   return null;
 }
+function checkCommandAvailable(command, args = ["--version"]) {
+  try {
+    const res = child_process.spawnSync(command, args, { encoding: "utf8", shell: false });
+    return res.status === 0;
+  } catch {
+    return false;
+  }
+}
 function checkPythonHasModule(pythonExe, moduleName) {
   try {
     const res = child_process.spawnSync(pythonExe, ["-c", `import ${moduleName}`], { encoding: "utf8", shell: false });
     return res.status === 0;
   } catch {
     return false;
+  }
+}
+function compileJavaSource(filePath) {
+  try {
+    const outputDir = path.dirname(filePath);
+    const compile = child_process.spawnSync("javac", ["-d", outputDir, filePath], { encoding: "utf8", shell: false });
+    if (compile.status !== 0) {
+      return { success: false, stdout: compile.stdout || "", stderr: compile.stderr || "", error: "Java compilation failed" };
+    }
+    return { success: true, stdout: compile.stdout || "", stderr: compile.stderr || "" };
+  } catch (err) {
+    return { success: false, stdout: "", stderr: err.message, error: err.message };
   }
 }
 function installDeps(packages, pythonExe) {
@@ -3877,6 +3964,60 @@ ${compile.stderr}`);
         status: "failed",
         exitCode: null,
         error: `Módulo Python "websocket" no encontrado. Instala con: ${pythonExe} -m pip install websocket-client`
+      };
+    }
+  }
+  if (ext === ".jar" || ext === ".java") {
+    if (!checkCommandAvailable("java", ["-version"])) {
+      return {
+        path: filePath,
+        command: "java",
+        args: launcher.args,
+        startedAt: /* @__PURE__ */ new Date(),
+        status: "failed",
+        exitCode: null,
+        error: "Java no encontrado. Instala JDK/JRE y asegúrate de que java esté en el PATH."
+      };
+    }
+    if (ext === ".java") {
+      if (!checkCommandAvailable("javac", ["-version"])) {
+        return {
+          path: filePath,
+          command: "javac",
+          args: [],
+          startedAt: /* @__PURE__ */ new Date(),
+          status: "failed",
+          exitCode: null,
+          error: "javac no encontrado. Instala JDK y asegúrate de que javac esté en el PATH."
+        };
+      }
+      const compileRes = compileJavaSource(filePath);
+      if (!compileRes.success) {
+        return {
+          path: filePath,
+          command: "javac",
+          args: ["-d", path.dirname(filePath), filePath],
+          startedAt: /* @__PURE__ */ new Date(),
+          status: "failed",
+          exitCode: null,
+          error: `Fallo la compilación Java: ${compileRes.stderr || compileRes.error}`
+        };
+      }
+      const className = path.basename(filePath, ".java");
+      launcher.command = "java";
+      launcher.args = ["-cp", path.dirname(filePath), className];
+    }
+  }
+  if (ext === ".cpp") {
+    if (!checkCommandAvailable("g++", ["--version"])) {
+      return {
+        path: filePath,
+        command: "g++",
+        args: [],
+        startedAt: /* @__PURE__ */ new Date(),
+        status: "failed",
+        exitCode: null,
+        error: "g++ no encontrado. Instala un compilador C++ y añádelo al PATH."
       };
     }
   }
@@ -4213,6 +4354,49 @@ function handleJsonRpc(plugin, request) {
           registersChanged: t2.registersChanged,
           flagsChanged: t2.flagsChanged
         }));
+        break;
+      }
+      case "vm.getBytecodeStatistics": {
+        const engine = engineManager.getEngine();
+        if (!engine) {
+          throw new Error("No binary loaded");
+        }
+        const bytecode = engine.getBytecode();
+        if (!bytecode) {
+          throw new Error("No bytecode loaded");
+        }
+        const analyzer = new BytecodeAnalyzer(bytecode, engine.getBytecodeBase());
+        result = analyzer.getStatistics();
+        break;
+      }
+      case "vm.findJumpTables": {
+        const engine = engineManager.getEngine();
+        if (!engine) {
+          throw new Error("No binary loaded");
+        }
+        const bytecode = engine.getBytecode();
+        if (!bytecode) {
+          throw new Error("No bytecode loaded");
+        }
+        const analyzer = new BytecodeAnalyzer(bytecode, engine.getBytecodeBase());
+        result = analyzer.findJumpTables();
+        break;
+      }
+      case "vm.getBytecodeDisassembly": {
+        const engine = engineManager.getEngine();
+        if (!engine) {
+          throw new Error("No binary loaded");
+        }
+        const bytecode = engine.getBytecode();
+        if (!bytecode) {
+          throw new Error("No bytecode loaded");
+        }
+        const baseAddress = engine.getBytecodeBase();
+        const decoder = new BytecodeDecoder(bytecode, baseAddress, { variableLengthOpcodes: true, unknownOpcodeHandling: "fallback" });
+        const startVip = params?.startVip ? Number(params.startVip) : baseAddress;
+        const count = params?.count ? Number(params.count) : 100;
+        const instructions = decoder.decodeSequence(startVip, count);
+        result = instructions.map((instr) => decoder.disassemble(instr));
         break;
       }
       case "vm.getHandlers": {

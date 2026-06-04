@@ -7,9 +7,10 @@
 import { IncomingMessage } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import { engineManager } from './engine-manager'
+import { BytecodeAnalyzer, BytecodeDecoder } from '../core/analysis'
 import { spawn, spawnSync, ChildProcessWithoutNullStreams } from 'child_process'
 import { readdirSync, statSync, existsSync } from 'fs'
-import { extname, join, dirname } from 'path'
+import { basename, extname, join, dirname } from 'path'
 
 let pluginAuthToken: string | null = process.env['VMTRACE_PLUGIN_TOKEN'] || null
 
@@ -41,8 +42,10 @@ const supportedPluginLaunchers: Record<string, { command: string; argBuilder: (f
   '.mjs': { command: 'node', argBuilder: (filePath) => [filePath] },
   '.exe': { command: '', argBuilder: () => [] },
   '.jar': { command: 'java', argBuilder: (filePath) => ['-jar', filePath] },
+  '.java': { command: '', argBuilder: () => [] },
   '.bat': { command: '', argBuilder: () => [] },
-  '.cmd': { command: '', argBuilder: () => [] }
+  '.cmd': { command: '', argBuilder: () => [] },
+  '.cpp': { command: '', argBuilder: () => [] }
 }
 
 const pluginProcesses = new Map<string, PluginProcessRecord>()
@@ -100,12 +103,34 @@ function findWorkspaceVenvPython(): string | null {
   return null
 }
 
+function checkCommandAvailable(command: string, args: string[] = ['--version']): boolean {
+  try {
+    const res = spawnSync(command, args, { encoding: 'utf8', shell: false })
+    return res.status === 0
+  } catch {
+    return false
+  }
+}
+
 function checkPythonHasModule(pythonExe: string, moduleName: string): boolean {
   try {
     const res = spawnSync(pythonExe, ['-c', `import ${moduleName}`], { encoding: 'utf8', shell: false })
     return res.status === 0
   } catch {
     return false
+  }
+}
+
+function compileJavaSource(filePath: string): { success: boolean; stdout?: string; stderr?: string; error?: string } {
+  try {
+    const outputDir = dirname(filePath)
+    const compile = spawnSync('javac', ['-d', outputDir, filePath], { encoding: 'utf8', shell: false })
+    if (compile.status !== 0) {
+      return { success: false, stdout: compile.stdout || '', stderr: compile.stderr || '', error: 'Java compilation failed' }
+    }
+    return { success: true, stdout: compile.stdout || '', stderr: compile.stderr || '' }
+  } catch (err: any) {
+    return { success: false, stdout: '', stderr: err.message, error: err.message }
   }
 }
 
@@ -245,12 +270,12 @@ function startPluginProcess(filePath: string): PluginProcessInfo {
     shell: true,
     cwd: dirname(filePath)
   }
+
   // If Python file, verify required modules before starting
   if (ext === '.py') {
     const pythonExe = launcher.command || 'python'
     const hasWebsocket = checkPythonHasModule(pythonExe, 'websocket')
     if (!hasWebsocket) {
-      // If auto-install enabled, attempt to install and log output
       if (autoInstallDeps) {
         logMessage('system_installer', 'Installer', 'out', `Auto-install enabled: installing websocket-client using ${pythonExe}`)
         const installRes = installDeps(['websocket-client'], pythonExe)
@@ -267,7 +292,6 @@ function startPluginProcess(filePath: string): PluginProcessInfo {
           }
         }
 
-        // Re-check availability
         const nowHas = checkPythonHasModule(pythonExe, 'websocket')
         if (!nowHas) {
           return {
@@ -290,6 +314,66 @@ function startPluginProcess(filePath: string): PluginProcessInfo {
         status: 'failed',
         exitCode: null,
         error: 'Módulo Python "websocket" no encontrado. Instala con: ' + `${pythonExe} -m pip install websocket-client`
+      }
+    }
+  }
+
+  // Java plugins require the JDK/runtime
+  if (ext === '.jar' || ext === '.java') {
+    if (!checkCommandAvailable('java', ['-version'])) {
+      return {
+        path: filePath,
+        command: 'java',
+        args: launcher.args,
+        startedAt: new Date(),
+        status: 'failed',
+        exitCode: null,
+        error: 'Java no encontrado. Instala JDK/JRE y asegúrate de que java esté en el PATH.'
+      }
+    }
+
+    if (ext === '.java') {
+      if (!checkCommandAvailable('javac', ['-version'])) {
+        return {
+          path: filePath,
+          command: 'javac',
+          args: [],
+          startedAt: new Date(),
+          status: 'failed',
+          exitCode: null,
+          error: 'javac no encontrado. Instala JDK y asegúrate de que javac esté en el PATH.'
+        }
+      }
+
+      const compileRes = compileJavaSource(filePath)
+      if (!compileRes.success) {
+        return {
+          path: filePath,
+          command: 'javac',
+          args: ['-d', dirname(filePath), filePath],
+          startedAt: new Date(),
+          status: 'failed',
+          exitCode: null,
+          error: `Fallo la compilación Java: ${compileRes.stderr || compileRes.error}`
+        }
+      }
+
+      const className = basename(filePath, '.java')
+      launcher.command = 'java'
+      launcher.args = ['-cp', dirname(filePath), className]
+    }
+  }
+
+  if (ext === '.cpp') {
+    if (!checkCommandAvailable('g++', ['--version'])) {
+      return {
+        path: filePath,
+        command: 'g++',
+        args: [],
+        startedAt: new Date(),
+        status: 'failed',
+        exitCode: null,
+        error: 'g++ no encontrado. Instala un compilador C++ y añádelo al PATH.'
       }
     }
   }
@@ -712,6 +796,52 @@ function handleJsonRpc(plugin: ConnectedPlugin, request: JsonRpcRequest): void {
           registersChanged: t.registersChanged,
           flagsChanged: t.flagsChanged
         }))
+        break
+      }
+
+      case 'vm.getBytecodeStatistics': {
+        const engine = engineManager.getEngine()
+        if (!engine) {
+          throw new Error('No binary loaded')
+        }
+        const bytecode = engine.getBytecode()
+        if (!bytecode) {
+          throw new Error('No bytecode loaded')
+        }
+        const analyzer = new BytecodeAnalyzer(bytecode, engine.getBytecodeBase())
+        result = analyzer.getStatistics()
+        break
+      }
+
+      case 'vm.findJumpTables': {
+        const engine = engineManager.getEngine()
+        if (!engine) {
+          throw new Error('No binary loaded')
+        }
+        const bytecode = engine.getBytecode()
+        if (!bytecode) {
+          throw new Error('No bytecode loaded')
+        }
+        const analyzer = new BytecodeAnalyzer(bytecode, engine.getBytecodeBase())
+        result = analyzer.findJumpTables()
+        break
+      }
+
+      case 'vm.getBytecodeDisassembly': {
+        const engine = engineManager.getEngine()
+        if (!engine) {
+          throw new Error('No binary loaded')
+        }
+        const bytecode = engine.getBytecode()
+        if (!bytecode) {
+          throw new Error('No bytecode loaded')
+        }
+        const baseAddress = engine.getBytecodeBase()
+        const decoder = new BytecodeDecoder(bytecode, baseAddress, { variableLengthOpcodes: true, unknownOpcodeHandling: 'fallback' })
+        const startVip = params?.startVip ? Number(params.startVip) : baseAddress
+        const count = params?.count ? Number(params.count) : 100
+        const instructions = decoder.decodeSequence(startVip, count)
+        result = instructions.map(instr => decoder.disassemble(instr))
         break
       }
 

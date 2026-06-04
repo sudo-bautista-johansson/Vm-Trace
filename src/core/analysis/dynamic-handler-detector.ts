@@ -48,7 +48,7 @@ export class DynamicHandlerDetector {
     }
 
     // Step 2: Identify likely opcodes from frequency analysis
-    const opcodes = this.analyzer.identifyLikelyOpcodes(500)
+    const opcodes = this.analyzer.identifyLikelyOpcodes()
     result.opcodesCandidates = opcodes.filter(o => o.likely)
 
     // Step 3: Create handlers for detected opcodes
@@ -113,9 +113,26 @@ export class DynamicHandlerDetector {
         handler.handlerType = knownSig.type.split(':')[1] || 'unknown'
         handler.description = knownSig.description
       } else {
-        // Infer semantics from pattern
+        // Gather contextual opcode patterns around a few occurrences.
+        const positions = this.analyzer.getOpcodePositions(handler.opcodeValue)
+        const samplePositions = positions.slice(0, 5)
+        let precedingOpcodes: number[] = []
+        let followingOpcodes: number[] = []
+        let bytecodeWindow: Buffer | undefined
+
+        for (const pos of samplePositions) {
+          const context = this.analyzer.getOpcodeContext(pos, 6)
+          precedingOpcodes = precedingOpcodes.concat(context.precedingOpcodes)
+          followingOpcodes = followingOpcodes.concat(context.followingOpcodes)
+          bytecodeWindow = bytecodeWindow || context.bytecodeWindow
+        }
+
         const inferred = OpcodeSemanticAnalyzer.analyzeOpcode(handler.opcodeValue, {
-          frequency: 0 // Would be populated from frequency analysis in real scenario
+          frequency: handler.confidence ? Math.round(handler.confidence * 100) : 0,
+          precedingOpcodes,
+          followingOpcodes,
+          bytecodeWindow,
+          position: samplePositions[0]
         })
         inferredSemantics++
         handler.label = OpcodeSemanticAnalyzer.getExecutorLabel(inferred.type)

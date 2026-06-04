@@ -292,6 +292,8 @@ export class VMEngine {
   isRunning(): boolean { return this.running }
   getStepCount(): number { return this.stepCount }
   getConfig(): VMEngineConfig { return { ...this.config } }
+  getBytecode(): Buffer | null { return this.bytecode }
+  getBytecodeBase(): number { return this.bytecodeBase }
 
   /**
    * Expose state manager methods for handler executors
